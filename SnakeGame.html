@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Snake Game</title>
+</head>
+<body>
+	<canvas height="600" width="600" id="myCanvas" style="border:3px solid black"></canvas>
+	
+	<script type="text/javascript">
+		
+		var myCanvas = document.getElementById('myCanvas').getContext('2d');
+		var WIDTH = 600;
+		var HEIGHT = 600;
+		var snakeList, foodList, eaten, intervalVar,score;
+		var direction=3;
+		myCanvas.font = "20px Calibri";
+		myCanvas.fillText('click me to start the game',140, 250);
+
+		var gameStarted = false;
+		var snakeLength=4;
+		var snakeBodyDistance=5;
+		var gameInterval= 100;
+		var framesPerSecond=30;
+
+		var snakeBody = {
+			width:20,
+			height:20,
+			color:'green',
+		};
+
+		var food = {
+			width:20,
+			height:20,
+			color:'red',
+		};
+		document.getElementById('myCanvas').onmousedown= function(){
+			if (gameStarted==false){
+				startGame();
+			}
+			
+
+		}
+
+		document.onkeydown = function(event) {
+			/*
+			if (event.keyCode ==187){
+				gameInterval+=10;
+				console.log("GameInterval="+gameInterval);
+				
+			}
+			*/
+			if (event.keyCode ==37){//left
+				if (direction!=2){
+					direction = 0;
+					}
+			}
+			else if (event.keyCode ==38){//up
+				if (direction!=3){
+					direction = 1;
+					}
+			}
+			else if (event.keyCode ==39){//right
+				if (direction!=0){
+					direction = 2;
+					}
+			}
+			else if (event.keyCode ==40){//down
+				if (direction!=1){
+					direction = 3;
+				}
+			};
+
+		}
+		testCollision = function(rect1,rect2){
+			//console.log(rect1);
+			//console.log(rect2);
+			condition1= (rect1.x<=rect2.x+food.width)&&
+						(rect2.x<=rect1.x+snakeBody.width);
+			 if (condition1)console.log("sovpadenije X");
+
+			 condition2= (rect1.y<=rect2.y+food.height)&&
+						(rect2.y<=rect1.y+snakeBody.height);
+			 if (condition2)console.log("sovpadenije Y");
+			result=((condition1&&condition2));
+			 //console.log ('testCollision (food):'+result);
+			return result;
+
+		}
+		testCollisionInSnake = function(snake1,snake2){
+			/*
+			condition1= (snake1.x<=snake2.x+snakeBody.width-15)&&
+						(snake2.x<=snake1.x+snakeBody.width-15);
+
+			condition2= (snake1.y<=snake2.y+snakeBody.height-15)&&
+						(snake2.y<=snake1.y+snakeBody.height-15);
+			result=((condition1&&condition2));
+			return result;
+			*/
+			//OR
+			
+			result2=((Math.abs(snake1.x-snake2.x)<2)&&//abs = модуль числа
+					(Math.abs(snake1.y-snake2.y)<2));
+			//console.log ('testCollision (body):'+result2);
+			return result2;
+		}
+
+
+		drawSnake = function(sb,i) {  //draws one rectangle of a snake
+			myCanvas.save();
+			if (i==0) {myCanvas.fillStyle = 'darkGreen';}
+			else
+			{myCanvas.fillStyle = snakeBody.color;}
+			myCanvas.fillRect(sb.x,sb.y,snakeBody.width, snakeBody.height);
+			myCanvas.restore();
+		}
+
+		drawFood = function (f,i){
+			myCanvas.save();
+			myCanvas.fillStyle = food.color;
+			myCanvas.fillRect(f.x, f.y, food.width, food.height);
+			myCanvas.restore();
+
+		}
+		drawScore = function (){
+			myCanvas.save();
+			//myCanvas.fillStyle = "red";
+			//myCanvas.fillText(400, 30);
+			myCanvas.fillStyle = "white";
+			myCanvas.fillText("score:"+score, 500, 30);
+			myCanvas.restore();
+
+		}
+		updateSnakeList = function(){
+			//console.log('updateSnakeList');
+			for ( i=snakeList.length-1;i>=0;i--){
+			//for ( i=snakeLength-1;i>=0;i--){
+				//console.log('inside for loop');
+				if (direction == 0) {//'left'
+					//console.log('direction=left');
+					if (i==0){
+						snakeList[i].x = snakeList[i].x-snakeBodyDistance;//5- snake speed
+					}
+					else {
+						snakeList[i].x = snakeList[i-1].x;
+						snakeList[i].y = snakeList[i-1].y;
+						}
+				}
+
+				else if (direction==1){//'up'
+					if (i==0){
+						snakeList[i].y = snakeList[i].y-snakeBodyDistance;//5- snake speed
+					}
+					else{
+						snakeList[i].x = snakeList[i-1].x;
+						snakeList[i].y = snakeList[i-1].y;
+						}
+					
+				}
+
+				else if (direction==2){//'right'
+					if (i==0){
+						snakeList[i].x = snakeList[i].x+snakeBodyDistance;//5- snake speed
+					}
+					else{
+						snakeList[i].x = snakeList[i-1].x;
+						snakeList[i].y = snakeList[i-1].y;
+						}
+					
+				}
+
+				else if (direction==3){//'down'
+					if (i==0){
+						snakeList[i].y = snakeList[i].y+snakeBodyDistance;//5- snake speed
+					}
+					else{
+						snakeList[i].x = snakeList[i-1].x;
+						snakeList[i].y = snakeList[i-1].y;
+						}
+					
+				}
+
+			}
+			//console.log('updateSnakeList2');
+		}
+		checkSnakePosition = function(){
+			if (snakeList[0].x>590){
+				snakeList[0].x=0;
+			}
+			if (snakeList[0].x<0){
+				snakeList[0].x=590;
+			}
+			if (snakeList[0].y>=600){
+				snakeList[0].y=0;
+			}
+			if (snakeList[0].y<0){
+				snakeList[0].y=600;
+			}
+		}
+
+		isGameOver = function() {
+			for(i in snakeList){
+				if(i==0)
+					continue;
+				if (testCollisionInSnake(snakeList[0],snakeList[i])){
+					
+					gameStarted=false;
+
+					myCanvas.save();
+					myCanvas.fillStyle = 'Orange';
+					myCanvas.font = "24px Calibri";
+					myCanvas.fillText('click me to restart the game',140, 250);
+					myCanvas.restore();
+
+
+
+					console.log("clear interval");
+					clearInterval(intervalVar);// this stops programm
+					return;
+				}
+			}
+
+		}
+
+		ifSnakeEats = function(){
+
+				if(testCollision(snakeList[0],foodList[0])==true){
+				foodList=[];
+				eaten = true;
+				score+=1;
+				console.log("score changed");
+				//var new_X, new_Y;
+				snakeList.push({x:snakeList[1].x, y:snakeList[1].y});
+				snakeList.push({x:snakeList[3].x, y:snakeList[3].y});
+				//snakeList.unshift({x:snakeList[0].x, y:snakeList[0].y});//вставляет звено вверх 
+				//snakeEats=false;
+
+				if(snakeBodyDistance<21){
+					snakeBodyDistance = snakeBodyDistance +0.1;
+				//console.log("snakeBodyDistance="+snakeBodyDistance)
+				};
+				
+				//snakeBody.width++;
+				//snakeBody.height++;
+			}
+
+
+		}
+
+		gameLoop = function(){				//update snake position
+			myCanvas.fillRect(0,0,WIDTH,HEIGHT);
+			//myCanvas.clearRect(0,0,WIDTH,HEIGHT);
+			if(eaten==true){  //reposition of food
+				var pos_x = Math.round(Math.random()*116)*5;
+				var pos_y = Math.round(Math.random()*116)*5;
+				foodList[0] = {x:pos_x,y:pos_y};
+				eaten=false;
+			}
+			foodList.forEach(drawFood);
+			
+			//ctx.fillText("score:"+score,400,30);
+
+			
+			drawScore();
+
+			isGameOver();
+			updateSnakeList();
+			checkSnakePosition();
+			ifSnakeEats();
+			//testCollision(snakeList[0],foodList[0]);
+			snakeList.forEach(drawSnake); 
+			//console.log('snake position updated');
+			//snakeEats();
+
+
+		}
+
+		startGame = function(){
+			gameStarted=true;
+
+			snakeList = [
+			{x:220,y:200},
+			{x:200,y:200},
+			{x:180,y:200},
+			{x:160,y:200},
+			{x:140,y:200},
+			{x:120,y:200},
+			{x:100,y:200},
+			{x:80,y:200},
+			{x:60,y:200},
+			{x:40,y:200},
+			];
+			foodList=[];
+			direction = 2;
+			eaten = true;
+			score =0;
+
+			intervalVar = setInterval(gameLoop,1000/framesPerSecond);//30 frames
+			//drawFood(20,20);
+
+		}
+		
+
+
+	</script>
+
+
+</body>
+</html>
